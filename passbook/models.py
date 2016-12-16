@@ -1,19 +1,14 @@
-#:coding=utf8:
-from passbook.smime_signature import smime_sign
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-import hashlib
-import zipfile
 import decimal
+import hashlib
+import json
+import zipfile
+from builtins import str
+from io import StringIO
+
+from passbook.smime_signature import smime_sign
 
 
 class Alignment:
@@ -324,7 +319,7 @@ class Pass(object):
     # creates the hashes for the files and adds them into a json string.
     def _createManifest(self, pass_json):
         # Creates SHA hashes for all files in package
-        self._hashes['pass.json'] = hashlib.sha1(pass_json).hexdigest()
+        self._hashes['pass.json'] = hashlib.sha1(pass_json.encode('utf8')).hexdigest()
         for filename, filedata in self._files.items():
             self._hashes[filename] = hashlib.sha1(filedata).hexdigest()
         return json.dumps(self._hashes)

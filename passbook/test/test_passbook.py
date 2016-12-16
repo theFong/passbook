@@ -1,18 +1,13 @@
-"""
-Test some basic pass file generation
-"""
-import tempfile
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
-from passbook.smime_signature import smime_verify
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
-import pytest
+import json
 import os
+import tempfile
+import pytest
 
 from passbook.models import Barcode, BarcodeFormat, Pass, StoreCard
+from passbook.smime_signature import smime_verify
 
 base_path = os.path.realpath('.')
 
@@ -28,7 +23,7 @@ def _certificates_mising():
 
 def create_shell_pass(barcodeFormat=BarcodeFormat.CODE128):
     cardInfo = StoreCard()
-    cardInfo.addPrimaryField('name', 'John Doe', 'Name')
+    cardInfo.addPrimaryField('name', 'Jähn Doe', 'Name')
     stdBarcode = Barcode('test barcode', barcodeFormat, 'alternate text')
     passfile = Pass(cardInfo, organizationName='Org Name', passTypeIdentifier='Pass Type ID', teamIdentifier='Team Identifier')
     passfile.barcode = stdBarcode
@@ -155,7 +150,7 @@ def test_signing():
     signature_file = os.path.join(base_path, 'passbook/test/temp/signature.der')
 
     try:
-        with open(password_file) as file_:
+        with open(password_file, 'r') as file_:
             password = file_.read().strip()
     except IOError:
         password = ''
@@ -174,7 +169,7 @@ def test_signing():
         password=password,
     )
 
-    with open(signature_file, 'w') as file_:
+    with open(signature_file, 'wb') as file_:
         file_.write(signature)
 
     assert smime_verify(
@@ -210,8 +205,8 @@ def test_passbook_creation():
     by git.
     """
     try:
-        with open(password_file) as file_:
-            password = file_.read().strip()
+        with open(password_file, 'rb') as file_:
+            password = file_.read().strip().decode('utf-8')
     except IOError:
         password = ''
 

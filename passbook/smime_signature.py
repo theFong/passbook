@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from os import path
 import subprocess
+from builtins import bytes
+from os import path
 
 __all__ = ['smime_sign', 'smime_verify']
 
@@ -79,7 +80,7 @@ def smime_sign(signer_cert_path, signer_key_path, content, password='',
         stderr=subprocess.PIPE,
     )
 
-    stdout, stderr = process.communicate(content)
+    stdout, stderr = process.communicate(bytes(content, encoding='utf8'))
 
     if process.returncode:
         raise RuntimeError(
