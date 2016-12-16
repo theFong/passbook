@@ -1,16 +1,13 @@
 """
 Test some basic pass file generation
 """
+from passbook.smime_signature import smime_verify
 
 try:
     import json
 except ImportError:
     import simplejson as json
 import pytest
-from M2Crypto import BIO
-from M2Crypto import SMIME
-from M2Crypto import X509
-from M2Crypto import m2
 from path import Path
 
 from passbook.models import Barcode, BarcodeFormat, Pass, StoreCard
@@ -150,6 +147,9 @@ def test_signing():
     them to git. Store them in the files indicated below, they are ignored
     by git.
     """
+    manifest_file = cwd / 'temp' / 'manifest.json'
+    signature_file = cwd / 'temp' / 'signature.json'
+
     try:
         with open(password_file) as file_:
             password = file_.read().strip()
@@ -158,38 +158,43 @@ def test_signing():
 
     passfile = create_shell_pass()
     manifest_json = passfile._createManifest(passfile._createPassJson())
+
+    with open(manifest_file, 'w') as file_:
+        file_.write(manifest_json)
+
     signature = passfile._createSignature(
-        manifest_json,
-        certificate,
-        key,
-        wwdr_certificate,
-        password,
+        manifest=manifest_json,
+        certificate=certificate,
+        key=key,
+        wwdr_certificate=wwdr_certificate,
+        password=password,
     )
 
-    smime_obj = SMIME.SMIME()
+    with open(signature_file, 'w') as file_:
+        file_.write(signature)
 
-    store = X509.X509_Store()
-    store.load_info(str(wwdr_certificate))
-    smime_obj.set_x509_store(store)
+    assert smime_verify(
+        signer_cert_path=str(wwdr_certificate),
+        content_path=str(manifest_file),
+        signature_path=str(signature_file),
+        signature_format='DER',
+        noverify=True,
+    ) is True
 
-    signature_bio = BIO.MemoryBuffer(signature)
-    signature_p7 = SMIME.PKCS7(m2.pkcs7_read_bio_der(signature_bio._ptr()), 1)
-
-    stack = signature_p7.get0_signers(X509.X509_Stack())
-    smime_obj.set_x509_stack(stack)
-
-    data_bio = BIO.MemoryBuffer(manifest_json)
-
-    # PKCS7_NOVERIFY = do not verify the signers certificate of a signed message.
-    assert smime_obj.verify(
-        signature_p7, data_bio, flags=SMIME.PKCS7_NOVERIFY
-    ) == manifest_json
-
+    # If the content of the manifest is wrong, the verification of the
+    # signature must fail.
     tampered_manifest = '{"pass.json": "foobar"}'
-    data_bio = BIO.MemoryBuffer(tampered_manifest)
-    # Verification MUST fail!
-    with pytest.raises(SMIME.PKCS7_Error):
-        smime_obj.verify(signature_p7, data_bio, flags=SMIME.PKCS7_NOVERIFY)
+
+    with open(manifest_file, 'w') as file_:
+        file_.write(tampered_manifest)
+
+    assert smime_verify(
+        signer_cert_path=str(wwdr_certificate),
+        content_path=str(manifest_file),
+        signature_path=str(signature_file),
+        signature_format='DER',
+        noverify=True,
+    ) is False
 
 
 @pytest.mark.skipif(_certificates_mising(), reason='Certificates missing')
@@ -208,4 +213,4 @@ def test_passbook_creation():
 
     passfile = create_shell_pass()
     passfile.addFile('icon.png', open(cwd / 'static/white_square.png', 'rb'))
-    passfile.create(certificate, key, wwdr_certificate, password)
+    passfile.create(str(certificate), str(key), str(wwdr_certificate), password)

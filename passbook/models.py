@@ -1,4 +1,5 @@
 #:coding=utf8:
+from passbook.smime_signature import smime_sign
 
 try:
     import json
@@ -14,10 +15,6 @@ import hashlib
 import zipfile
 import decimal
 
-from M2Crypto import SMIME
-from M2Crypto import X509
-from M2Crypto.X509 import X509_Stack
-
 
 class Alignment:
     LEFT = 'PKTextAlignmentLeft'
@@ -26,11 +23,13 @@ class Alignment:
     JUSTIFIED = 'PKTextAlignmentJustified'
     NATURAL = 'PKTextAlignmentNatural'
 
+
 class BarcodeFormat:    
     PDF417 = 'PKBarcodeFormatPDF417'
     QR = 'PKBarcodeFormatQR'
     AZTEC = 'PKBarcodeFormatAztec'
     CODE128 = 'PKBarcodeFormatCode128'
+
 
 class TransitType:
     AIR = 'PKTransitTypeAir'
@@ -336,23 +335,16 @@ class Pass(object):
         def passwordCallback(*args, **kwds):
             return password
 
-        smime = SMIME.SMIME()
-        # we need to attach wwdr cert as X509
-        wwdrcert = X509.load_cert(wwdr_certificate)
-        stack = X509_Stack()
-        stack.push(wwdrcert)
-        smime.set_x509_stack(stack)
-
-        # need to cast to string since load_key doesnt work with unicode paths
-        smime.load_key(str(key), certificate, callback=passwordCallback)
-        pk7 = smime.sign(SMIME.BIO.MemoryBuffer(manifest), flags=SMIME.PKCS7_DETACHED | SMIME.PKCS7_BINARY)
-
-        pem = SMIME.BIO.MemoryBuffer()
-        pk7.write(pem)
-        # convert pem to der
-        der = ''.join(l.strip() for l in pem.read().split('-----')[2].splitlines()).decode('base64')
-
-        return der
+        signature = smime_sign(
+            signer_cert_path=certificate,
+            signer_key_path=key,
+            cert_path=wwdr_certificate,
+            password=password,
+            recipient_cert_path=None,
+            content=manifest,
+            output_format='DER',
+        )
+        return signature
 
     # Creates .pkpass (zip archive)
     def _createZip(self, pass_json, manifest, signature, zip_file=None):
