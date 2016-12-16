@@ -1,6 +1,8 @@
 """
 Test some basic pass file generation
 """
+import tempfile
+
 from passbook.smime_signature import smime_verify
 
 try:
@@ -8,20 +10,20 @@ try:
 except ImportError:
     import simplejson as json
 import pytest
-from path import Path
+import os
 
 from passbook.models import Barcode, BarcodeFormat, Pass, StoreCard
 
-cwd = Path(__file__).parent
+base_path = os.path.realpath('.')
 
-wwdr_certificate = cwd / 'certificates/wwdr_certificate.pem'
-certificate = cwd / 'certificates/certificate.pem'
-key = cwd / 'certificates/key.pem'
-password_file = cwd / 'certificates/password.txt'
+wwdr_certificate = os.path.join(base_path, 'passbook/test/certificates/wwdr_certificate.pem')
+certificate = os.path.join(base_path, 'passbook/test/certificates/certificate.pem')
+key = os.path.join(base_path, 'passbook/test/certificates/key.pem')
+password_file = os.path.join(base_path, 'passbook/test/certificates/password.txt')
 
 
 def _certificates_mising():
-    return not wwdr_certificate.exists() or not certificate.exists() or not key.exists()
+    return not os.path.isfile(wwdr_certificate) or not os.path.isfile(certificate) or not os.path.isfile(key)
 
 
 def create_shell_pass(barcodeFormat=BarcodeFormat.CODE128):
@@ -121,8 +123,10 @@ def test_pdf_417_pass():
 
 
 def test_files():
+    dummy_image = os.path.join(base_path, 'passbook/test/static/white_square.png')
+
     passfile = create_shell_pass()
-    passfile.addFile('icon.png', open(cwd / 'static/white_square.png', 'rb'))
+    passfile.addFile('icon.png', open(dummy_image, 'rb'))
     assert len(passfile._files) == 1
     assert 'icon.png' in passfile._files
 
@@ -130,7 +134,7 @@ def test_files():
     manifest = json.loads(manifest_json)
     assert '170eed23019542b0a2890a0bf753effea0db181a' == manifest['icon.png']
 
-    passfile.addFile('logo.png', open(cwd / 'static/white_square.png', 'rb'))
+    passfile.addFile('logo.png', open(dummy_image, 'rb'))
     assert len(passfile._files) == 2
     assert 'logo.png' in passfile._files
 
@@ -147,8 +151,8 @@ def test_signing():
     them to git. Store them in the files indicated below, they are ignored
     by git.
     """
-    manifest_file = cwd / 'temp' / 'manifest.json'
-    signature_file = cwd / 'temp' / 'signature.json'
+    manifest_file = os.path.join(base_path, 'passbook/test/temp/wmanifest.json')
+    signature_file = os.path.join(base_path, 'passbook/test/temp/signature.der')
 
     try:
         with open(password_file) as file_:
@@ -174,9 +178,9 @@ def test_signing():
         file_.write(signature)
 
     assert smime_verify(
-        signer_cert_path=str(wwdr_certificate),
-        content_path=str(manifest_file),
-        signature_path=str(signature_file),
+        signer_cert_path=wwdr_certificate,
+        content_path=manifest_file,
+        signature_path=signature_file,
         signature_format='DER',
         noverify=True,
     ) is True
@@ -189,9 +193,9 @@ def test_signing():
         file_.write(tampered_manifest)
 
     assert smime_verify(
-        signer_cert_path=str(wwdr_certificate),
-        content_path=str(manifest_file),
-        signature_path=str(signature_file),
+        signer_cert_path=wwdr_certificate,
+        content_path=manifest_file,
+        signature_path=signature_file,
         signature_format='DER',
         noverify=True,
     ) is False
@@ -212,5 +216,8 @@ def test_passbook_creation():
         password = ''
 
     passfile = create_shell_pass()
-    passfile.addFile('icon.png', open(cwd / 'static/white_square.png', 'rb'))
-    passfile.create(str(certificate), str(key), str(wwdr_certificate), password)
+    dummy_image = os.path.join(base_path, 'passbook/test/static/white_square.png')
+    passfile.addFile('icon.png', open(dummy_image, 'rb'))
+
+    tf = tempfile.TemporaryFile()
+    passfile.create(certificate, key, wwdr_certificate, password, tf)
