@@ -1,2 +1,8 @@
-password.txt
-*.pem
+# The content of this directory is ignored as it will be populated
+# during the tests.
+
+# Ignore everyhting...
+*
+
+# ...except the gitignore file itself.
+!.gitignore

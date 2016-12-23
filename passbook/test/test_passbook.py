@@ -204,15 +204,35 @@ def test_passbook_creation():
     them to git. Store them in the files indicated below, they are ignored
     by git.
     """
-    try:
-        with open(password_file, 'rb') as file_:
-            password = file_.read().strip().decode('utf-8')
-    except IOError:
-        password = ''
+
+    # Read the file containing the password for the private key.
+    # This will fail deliberately if the file containing the team identifier
+    # does not exist.
+    with open(password_file, 'rb') as file_:
+        password = file_.read().strip().decode('utf-8')
+
+    # Team identifier of the organization that originated and
+    # signed the pass, as issued by Apple.
+    # This will fail deliberately if the file containing the team identifier
+    # does not exist.
+    team_identifier_file = os.path.join(base_path, 'passbook/test/certificates/team_identifier.txt')
+    with open(team_identifier_file) as file_:
+        team_identifier = file_.read().strip()
+
+    # Pass type identifier, as issued by Apple. The value must
+    # correspond with your signing certificate.
+    # This will fail deliberately if the file containing the team identifier
+    # does not exist.
+    pass_type_identifier_file = os.path.join(base_path, 'passbook/test/certificates/pass_type_identifier.txt')
+    with open(pass_type_identifier_file) as file_:
+        pass_type_identifier = file_.read().strip()
 
     passfile = create_shell_pass()
     dummy_image = os.path.join(base_path, 'passbook/test/static/white_square.png')
     passfile.addFile('icon.png', open(dummy_image, 'rb'))
+
+    passfile.passTypeIdentifier = pass_type_identifier
+    passfile.teamIdentifier = team_identifier
 
     tf = tempfile.TemporaryFile()
     passfile.create(certificate, key, wwdr_certificate, password, tf)
