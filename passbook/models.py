@@ -21,7 +21,7 @@ class Alignment:
     NATURAL = 'PKTextAlignmentNatural'
 
 
-class BarcodeFormat:    
+class BarcodeFormat:
     PDF417 = 'PKBarcodeFormatPDF417'
     QR = 'PKBarcodeFormatQR'
     AZTEC = 'PKBarcodeFormatAztec'
@@ -337,13 +337,13 @@ class Pass(object):
 
         smime = SMIME.SMIME()
 
-        wwdrcert = X509.load_cert_string(wwdr_certificate.bytes())
+        wwdrcert = X509.load_cert(wwdr_certificate)
         stack = X509_Stack()
         stack.push(wwdrcert)
         smime.set_x509_stack(stack)
 
-        key_bio = BIO.MemoryBuffer(bytes(key.bytes()))
-        certificate_bio = BIO.MemoryBuffer(bytes(certificate.bytes()))
+        key_bio = BIO.MemoryBuffer(open(key, 'rb').read())
+        certificate_bio = BIO.MemoryBuffer(open(certificate, 'rb').read())
         smime.load_key_bio(key_bio, certificate_bio, callback=passwordCallback)
         return smime
 
