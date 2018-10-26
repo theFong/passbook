@@ -16,15 +16,17 @@ setup(
     download_url='http://pypi.python.org/packages/source/P/Passbook/Passbook-%s.tar.gz' % version,
 
     install_requires=[
-        'M2Crypto >= 0.21.1',
+        'future',
+        'M2Crypto >= 0.28.2',
     ],
 
-    classifiers = [
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Other Environment',
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 2 :: Only',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
 )
