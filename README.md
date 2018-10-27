@@ -1,4 +1,4 @@
-# Passbook
+# Passbook Python 3
 
 [![Build Status](https://travis-ci.org/devartis/passbook.svg?branch=master)](https://travis-ci.org/devartis/passbook)
 
