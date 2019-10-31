@@ -4,7 +4,7 @@ version = __import__('passbook').__version__
 
 setup(
     name='Passbook',
-    version=version,
+    version="1.0.3dev",
     author='Fernando Aramendi',
     author_email='fernando@devartis.com',
     packages=['passbook', 'passbook.test'],
